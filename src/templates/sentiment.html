@@ -2,30 +2,53 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Null Page</title>
+    <title>Sentiment</title>
     <style>
+        body {
+            background-color: #121212; /* Dark background */
+            color: #E0E0E0; /* Light text color */
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center; /* Center the text */
+        }
+
         .round-logo {
-            width: 150px; 
+            width: 150px;
             height: 150px;
-            border-radius: 50%; 
-            overflow: hidden; 
+            border-radius: 50%;
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto; 
+            margin-bottom: 20px; /* Space between the logo and text */
         }
+
         .round-logo img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
+
+        h1 {
+            margin: 0;
+        }
+
+        .ai-text {
+            margin-top: 20px; /* Space between the heading and AI text */
+            font-style: italic; /* Optional styling for the AI text */
+        }
     </style>
 </head>
 <body>
     <div class="round-logo">
-        <img src="{{ url_for('static', filename='marketman.png') }}" alt="Logo">
+        <img src="/static/marketman.png" alt="Logo">
     </div>
     <h1>Market Sentiment Analysis</h1>
-    <p>Some sentiment for {{ data }}</p>
+    <div class="ai-text">{{ ai_text }}</div>
 </body>
 </html>
