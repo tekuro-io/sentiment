@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Null Page</title>
+    <style>
+        .round-logo {
+            width: 150px; 
+            height: 150px;
+            border-radius: 50%; 
+            overflow: hidden; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto; 
+        }
+        .round-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+    <div class="round-logo">
+        <img src="{{ url_for('static', filename='marketman.png') }}" alt="Logo">
+    </div>
+    <h1>Market Sentiment Analysis</h1>
+    <p>Some sentiment for {{ data }}</p>
+</body>
+</html>
