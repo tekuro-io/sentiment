@@ -1,18 +1,74 @@
 from flask import Flask, render_template, request
+import openai
+import requests
 
 app = Flask(__name__)
 
+# === CONFIG ===
+openai.api_key = "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"  # Your OpenAI API key
+serpapi_api_key = "86d08363201ae1a5ea9d4aa218c9fcaf458ddfa36d8f6626d52d53cac701fb2b"  # Your SerpAPI key
+
+def get_web_results(ticker):
+    """Use SerpAPI to get Google search results for the ticker"""
+    search_url = "https://serpapi.com/search.json"
+    params = {
+        "engine": "google",
+        "q": f"{ticker} stock news",
+        "api_key": serpapi_api_key,
+        "num": 5
+    }
+    response = requests.get(search_url, params=params)
+    data = response.json()
+
+    snippets = []
+    for result in data.get("organic_results", []):
+        title = result.get("title", "")
+        snippet = result.get("snippet", "")
+        link = result.get("link", "")
+        snippets.append(f"- {title}\n{snippet}\n({link})")
+
+    return "\n".join(snippets[:5]) if snippets else "No recent news found."
+
+def ask_gpt(ticker, web_results):
+    """Send search results and ticker info to OpenAI for analysis"""
+    system_prompt = (
+        "You are a professional stock market news analyst. "
+        "Given web search results about a stock, summarize:\n"
+        "- What the company does (1-2 lines)\n"
+        "- Today's main catalyst or news moving the stock\n"
+        "- Sentiment (Bullish, Bearish, Neutral) and why\n"
+        "- Possible intraday price action or volatility range estimate"
+    )
+
+    user_prompt = (
+        f"Ticker: {ticker}\n\n"
+        f"Web Search Results:\n{web_results}\n\n"
+        "Give your analysis:"
+    )
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ],
+        temperature=0.3
+    )
+
+    return response.choices[0].message.content.strip()
+
 def handle_null_var():
-    # Your logic for handling null var
-    data = "No variable was provided."
-  
-    return data
+    """For null page"""
+    return "No ticker provided."
 
-def handle_ticker(var):
- 
-    data = f"The variable provided is: {var}"
-
-    return data
+def handle_ticker(ticker):
+    """Main logic for sentiment check"""
+    try:
+        web_results = get_web_results(ticker)
+        gpt_output = ask_gpt(ticker, web_results)
+        return gpt_output
+    except Exception as e:
+        return f"Error fetching sentiment for {ticker}: {str(e)}"
 
 @app.route('/get/', defaults={'var': None})
 @app.route('/get/<var>')
@@ -21,8 +77,8 @@ def get_var(var):
         data = handle_null_var()
         return render_template('null_page.html', data=data)
     else:
-        data = handle_ticker(var)
-        return render_template('sentiment.html', data=data)
+        ai_text = handle_ticker(var)
+        return render_template('sentiment.html', ai_text=ai_text)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', debug=True)
