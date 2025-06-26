@@ -1,7 +1,9 @@
 package main
 
 import (
+	"embed"
 	_ "embed"
+	"io/fs"
 	"log"
 	"net/http"
 	"tekuro/sentiment/sentiment"
@@ -10,6 +12,9 @@ import (
 
 //go:embed templates/null_page.html
 var nullPage []byte
+
+//go:embed static/*
+var static embed.FS
 
 func handleNoTicker() string {
     return "No ticker provided."
@@ -43,10 +48,11 @@ func main() {
         }
 	})
 
-	mux.HandleFunc("GET /get", func(w http.ResponseWriter, r *http.Request) {
-        w.Header().Set("Content-Type", "text/html")
-        w.Write(nullPage)
-	})
+    staticFiles, err := fs.Sub(static, "static")
+    if err != nil {
+        log.Fatal(err)
+    }
+    mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFiles))))
 
     log.Fatal(http.ListenAndServe(":5000", mux))
 }
