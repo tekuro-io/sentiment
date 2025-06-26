@@ -6,8 +6,44 @@ import os
 app = Flask(__name__)
 
 # === CONFIG ===
-openai.api_key = os.getenv("OPENAI_KEY")
 serpapi_api_key = os.getenv("SEARCH_KEY")
+client = openai.OpenAI(api_key=os.getenv("OPENAI_KEY"))
+
+def ask_gpt(ticker, web_results):
+    print(f"🤖 Sending web results to OpenAI for ticker: {ticker}")
+    try:
+        system_prompt = (
+            "You are a professional stock market news analyst. "
+            "Given web search results about a stock, summarize:\n"
+            "- What the company does (1-2 lines)\n"
+            "- Today's main catalyst or news moving the stock\n"
+            "- Sentiment (Bullish, Bearish, Neutral) and why\n"
+            "- Possible intraday price action or volatility range estimate"
+        )
+
+        user_prompt = (
+            f"Ticker: {ticker}\n\n"
+            f"Web Search Results:\n{web_results}\n\n"
+            "Give your analysis:"
+        )
+
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.3
+        )
+
+        gpt_reply = response.choices[0].message.content.strip()
+        print(f"✅ GPT response for {ticker}:\n{gpt_reply}\n")
+        return gpt_reply
+
+    except Exception as e:
+        print(f"❌ OpenAI API Error for {ticker}: {e}")
+        return f"Error from GPT API: {str(e)}"
+
 
 def get_web_results(ticker):
     print(f"🔎 Searching news for ticker: {ticker}")
@@ -38,40 +74,6 @@ def get_web_results(ticker):
         print(f"❌ Error fetching web results for {ticker}: {e}")
         return f"Error fetching web results for {ticker}: {str(e)}"
 
-def ask_gpt(ticker, web_results):
-    print(f"🤖 Sending web results to OpenAI for ticker: {ticker}")
-    try:
-        system_prompt = (
-            "You are a professional stock market news analyst. "
-            "Given web search results about a stock, summarize:\n"
-            "- What the company does (1-2 lines)\n"
-            "- Today's main catalyst or news moving the stock\n"
-            "- Sentiment (Bullish, Bearish, Neutral) and why\n"
-            "- Possible intraday price action or volatility range estimate"
-        )
-
-        user_prompt = (
-            f"Ticker: {ticker}\n\n"
-            f"Web Search Results:\n{web_results}\n\n"
-            "Give your analysis:"
-        )
-
-        response = openai.ChatCompletion.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            temperature=0.3
-        )
-
-        gpt_reply = response.choices[0].message.content.strip()
-        print(f"✅ GPT response for {ticker}:\n{gpt_reply}\n")
-        return gpt_reply
-
-    except Exception as e:
-        print(f"❌ OpenAI API Error for {ticker}: {e}")
-        return f"Error from GPT API: {str(e)}"
 
 def handle_null_var():
     print("⚠️ Null ticker received.")
