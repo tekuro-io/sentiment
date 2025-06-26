@@ -1,12 +1,13 @@
 from flask import Flask, render_template, request
 import openai
 import requests
+import os
 
 app = Flask(__name__)
 
 # === CONFIG ===
-openai.api_key = "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"  # Your OpenAI API key
-serpapi_api_key = "86d08363201ae1a5ea9d4aa218c9fcaf458ddfa36d8f6626d52d53cac701fb2b"  # Your SerpAPI key
+openai.api_key = os.getenv("OPENAI_KEY")
+serpapi_api_key = os.getenv("SEARCH_KEY")
 
 def get_web_results(ticker):
     """Use SerpAPI to get Google search results for the ticker"""

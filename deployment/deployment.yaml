@@ -16,6 +16,18 @@ spec:
       containers:
       - name: sentiment-container
         image: artifacts.tekuro.io/sentiment:latest
+        env:
+          - name: OPENAI_KEY
+            valueFrom:
+              secretKeyRef:
+                name: openai-api-secrets
+                key: key
+          - name: SEARCH_KEY
+            valueFrom:
+              secretKeyRef:
+                name: search-api-secrets
+                key: key
+          
         ports:
         - containerPort: 5000
       restartPolicy: Always
