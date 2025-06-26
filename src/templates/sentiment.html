@@ -5,8 +5,8 @@
     <title>Sentiment</title>
     <style>
         body {
-            background-color: #121212; /* Dark background */
-            color: #E0E0E0; /* Light text color */
+            background-color: #121212;
+            color: #E0E0E0;
             font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
@@ -14,7 +14,7 @@
             justify-content: center;
             height: 100vh;
             margin: 0;
-            text-align: center; /* Center the text */
+            text-align: center;
         }
 
         .round-logo {
@@ -25,7 +25,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 20px; /* Space between the logo and text */
+            margin-bottom: 20px;
         }
 
         .round-logo img {
@@ -39,16 +39,53 @@
         }
 
         .ai-text {
-            margin-top: 20px; /* Space between the heading and AI text */
-            font-style: italic; /* Optional styling for the AI text */
+            margin-top: 20px;
+            font-style: italic;
+        }
+
+        /* Loader Styles */
+        #loading {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(18, 18, 18, 0.95);
+            z-index: 9999;
+        }
+
+        .spinner {
+            border: 8px solid #333;
+            border-top: 8px solid #00FFAA;
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
+
+    <!-- Loading Spinner -->
+    <div id="loading">
+        <div class="spinner"></div>
+    </div>
+
     <div class="round-logo">
         <img src="/static/marketman.png" alt="Logo">
     </div>
     <h1>Market Sentiment Analysis {{ ticker }}</h1>
     <pre>{{ ai_text }}</pre>
+
+    <script>
+        window.onload = function() {
+            document.getElementById('loading').style.display = 'none';
+        };
+    </script>
 </body>
 </html>
