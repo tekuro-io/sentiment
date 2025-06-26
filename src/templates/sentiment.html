@@ -16,7 +16,12 @@
             margin: 0;
             text-align: center;
         }
-
+        .ai-text {
+            margin-top: 20px;
+            font-style: italic;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
         .round-logo {
             width: 150px;
             height: 150px;
@@ -74,18 +79,30 @@
     <!-- Loading Spinner -->
     <div id="loading">
         <div class="spinner"></div>
+        <p style="color: white; margin-top: 10px;">Generating AI Sentiment...</p>
     </div>
 
     <div class="round-logo">
         <img src="/static/marketman.png" alt="Logo">
     </div>
     <h1>Market Sentiment Analysis {{ ticker }}</h1>
-    <pre style="white-space: pre-wrap;">{{ ai_text }}</pre>
+    <pre class="ai-text">{{ ai_text }}</pre>
 
     <script>
-        window.onload = function() {
-            document.getElementById('loading').style.display = 'none';
-        };
+        // Poll every 200ms until .ai-text has non-empty content
+        function checkIfContentReady() {
+            const textBlock = document.querySelector('.ai-text');
+            if (textBlock && textBlock.innerText.trim().length > 0) {
+                document.getElementById('loading').style.display = 'none';
+            } else {
+                setTimeout(checkIfContentReady, 200);
+            }
+        }
+
+        // Start checking after DOM content is parsed
+        document.addEventListener('DOMContentLoaded', function() {
+            checkIfContentReady();
+        });
     </script>
 </body>
 </html>
