@@ -9,7 +9,7 @@ import (
 )
 
 type SerpApi struct {
-    api_key string
+	api_key string
 }
 
 func NewSerpApi() (*SerpApi, error) {
@@ -25,25 +25,25 @@ func NewSerpApi() (*SerpApi, error) {
 }
 
 func (s *SerpApi) search(ticker string) (string, error) {
-    parameter := map[string]string{
-      "q": fmt.Sprintf("%s stock news", ticker),
-      "google_domain": "google.com",
-    }
+	parameter := map[string]string{
+		"q":             fmt.Sprintf("%s stock news", ticker),
+		"google_domain": "google.com",
+	}
 
-    search := g.NewGoogleSearch(parameter, s.api_key)
-    results, err := search.GetJSON()
-    if err != nil {
-        return "", err
-    }
+	search := g.NewGoogleSearch(parameter, s.api_key)
+	results, err := search.GetJSON()
+	if err != nil {
+		return "", err
+	}
 
-    org_results, ok := results["organic_results"].([]interface{})
-    if !ok || len(results) == 0 {
+	org_results, ok := results["organic_results"].([]interface{})
+	if !ok || len(results) == 0 {
 		return "No recent news found.", nil
-    }
+	}
 
-    var snippets []string
-    for _, result := range org_results {
-        resultMap, ok := result.(map[string]interface{})
+	var snippets []string
+	for _, result := range org_results {
+		resultMap, ok := result.(map[string]interface{})
 		if !ok {
 			continue
 		}
@@ -58,9 +58,9 @@ func (s *SerpApi) search(ticker string) (string, error) {
 		if len(snippets) == 5 {
 			break
 		}
-    }
+	}
 
-    if len(snippets) == 0 {
+	if len(snippets) == 0 {
 		return "No recent news found.", nil
 	}
 

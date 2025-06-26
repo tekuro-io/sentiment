@@ -11,8 +11,8 @@ import (
 )
 
 type OpenAi struct {
-	client openai.Client
-    web_tool *SerpApi
+	client   openai.Client
+	web_tool *SerpApi
 }
 
 func NewOpenAi() (*OpenAi, error) {
@@ -26,33 +26,33 @@ func NewOpenAi() (*OpenAi, error) {
 		option.WithAPIKey(api_key),
 	)
 
-    web_tool, err := NewSerpApi()
-    if err != nil {
-        return nil, err
-    }
+	web_tool, err := NewSerpApi()
+	if err != nil {
+		return nil, err
+	}
 
 	return &OpenAi{
-		client: client,
-        web_tool: web_tool,
+		client:   client,
+		web_tool: web_tool,
 	}, nil
 }
 
 func (o *OpenAi) Sentiment(ctx context.Context, ticker string, sse *SSEWriter) {
 
-    webResults, err := o.web_tool.search(ticker)
-    if err != nil {
-        sse.Error(err)
-        return
-    }
+	webResults, err := o.web_tool.search(ticker)
+	if err != nil {
+		sse.Error(err)
+		return
+	}
 
-    systemPrompt := `You are a professional stock market news analyst. 
+	systemPrompt := `You are a professional stock market news analyst. 
         Given web search results about a stock, summarize:
         - What the company does (1-2 lines)
         - Today's main catalyst or news moving the stock
         - Sentiment (Bullish, Bearish, Neutral) and why
         - Possible intraday price action or volatility range estimate`
-        
-        userPrompt := fmt.Sprintf(`Ticker: %s
+
+	userPrompt := fmt.Sprintf(`Ticker: %s
         
         Web Search Results:
         %s
@@ -67,34 +67,34 @@ func (o *OpenAi) Sentiment(ctx context.Context, ticker string, sse *SSEWriter) {
 		Seed:  openai.Int(0),
 		Model: openai.ChatModelGPT4o,
 	})
-    defer stream.Close()
+	defer stream.Close()
 
-    acc := openai.ChatCompletionAccumulator{}
-    for stream.Next() {
-        chunk := stream.Current()
-	    acc.AddChunk(chunk)
+	acc := openai.ChatCompletionAccumulator{}
+	for stream.Next() {
+		chunk := stream.Current()
+		acc.AddChunk(chunk)
 
-	    if content, ok := acc.JustFinishedContent(); ok {
-	    	log.Println("Content stream finished:", content)
-	    }
+		if content, ok := acc.JustFinishedContent(); ok {
+			log.Println("Content stream finished:", content)
+		}
 
-	    // if using tool calls
-	    if tool, ok := acc.JustFinishedToolCall(); ok {
-	    	log.Println("Tool call stream finished:", tool.Index, tool.Name, tool.Arguments)
-	    }
+		// if using tool calls
+		if tool, ok := acc.JustFinishedToolCall(); ok {
+			log.Println("Tool call stream finished:", tool.Index, tool.Name, tool.Arguments)
+		}
 
-	    if refusal, ok := acc.JustFinishedRefusal(); ok {
-	    	log.Println("Refusal stream finished:", refusal)
-	    }
+		if refusal, ok := acc.JustFinishedRefusal(); ok {
+			log.Println("Refusal stream finished:", refusal)
+		}
 
-	    if len(chunk.Choices) > 0 {
-            sse.WriteEvent(chunk.Choices[0].Delta.Content)
-	    }
-    }
+		if len(chunk.Choices) > 0 {
+			sse.WriteEvent(chunk.Choices[0].Delta.Content)
+		}
+	}
 
-    if err := stream.Err(); err != nil {
+	if err := stream.Err(); err != nil {
 		sse.Error(err)
 	} else {
-        sse.Done()
-    }
+		sse.Done()
+	}
 }
