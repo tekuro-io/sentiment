@@ -85,26 +85,23 @@
     <div class="round-logo">
         <img src="/static/marketman.png" alt="Logo">
     </div>
-    <h1>Market Sentiment Analysis {{ ticker }}</h1>
-    <pre class="ai-text">{{ ai_text }}</pre>
+    <h1>Market Sentiment Analysis {{ .Ticker }}</h1>
+    <pre class="ai-text"></pre>
 
     <script>
-        // Replace with the actual ticker value (could be passed server-side or via query string)
-        const ticker = new URLSearchParams(window.location.search).get('ticker') || 'UNKNOWN';
-        document.getElementById('ticker').innerText = ticker.toUpperCase();
+        const ticker = "{{.Ticker}}";
 
         const aiText = document.querySelector('.ai-text');
         const loading = document.getElementById('loading');
         const errorDiv = document.getElementById('error');
 
-        // Open SSE connection to your backend
-        const source = new EventSource(`/get?ticker=${encodeURIComponent(ticker)}`);
+        const source = new EventSource(`/sse/${encodeURIComponent(ticker)}`);
 
         source.onmessage = function(event) {
+            loading.style.display = 'none';
             const data = event.data;
 
             if (data === '[DONE]') {
-                loading.style.display = 'none';
                 source.close();
                 return;
             }
@@ -117,7 +114,6 @@
                 return;
             }
 
-            // Append streamed chunk to the AI text block
             aiText.textContent += data;
         };
 
