@@ -12,6 +12,7 @@ import (
 
 type OpenAi struct {
 	client openai.Client
+    web_tool *SerpApi
 }
 
 func NewOpenAi() (*OpenAi, error) {
@@ -25,16 +26,43 @@ func NewOpenAi() (*OpenAi, error) {
 		option.WithAPIKey(api_key),
 	)
 
+    web_tool, err := NewSerpApi()
+    if err != nil {
+        return nil, err
+    }
+
 	return &OpenAi{
 		client: client,
+        web_tool: web_tool,
 	}, nil
 }
 
 func (o *OpenAi) Sentiment(ctx context.Context, ticker string, sse *SSEWriter) {
 
+    webResults, err := o.web_tool.search(ticker)
+    if err != nil {
+        sse.Error(err)
+        return
+    }
+
+    systemPrompt := `You are a professional stock market news analyst. 
+        Given web search results about a stock, summarize:
+        - What the company does (1-2 lines)
+        - Today's main catalyst or news moving the stock
+        - Sentiment (Bullish, Bearish, Neutral) and why
+        - Possible intraday price action or volatility range estimate`
+        
+        userPrompt := fmt.Sprintf(`Ticker: %s
+        
+        Web Search Results:
+        %s
+        
+        Give your analysis:`, ticker, webResults)
+
 	stream := o.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
 		Messages: []openai.ChatCompletionMessageParamUnion{
-			openai.UserMessage(ticker),
+			openai.SystemMessage(systemPrompt),
+			openai.UserMessage(userPrompt),
 		},
 		Seed:  openai.Int(0),
 		Model: openai.ChatModelGPT4o,

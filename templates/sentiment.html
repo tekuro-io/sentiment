@@ -21,8 +21,11 @@
             font-style: italic;
             white-space: pre-wrap;
             word-wrap: break-word;
+            text-align: left;
+            max-width: 800px;
+            padding: 1rem;
         }
-        .round-logo {
+       .round-logo {
             width: 150px;
             height: 150px;
             border-radius: 50%;
@@ -86,8 +89,8 @@
         <img src="/static/marketman.png" alt="Logo">
     </div>
     <h1>Market Sentiment Analysis {{ .Ticker }}</h1>
-    <pre class="ai-text"></pre>
-
+    <div class="ai-text"></div>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         const ticker = "{{.Ticker}}";
 
@@ -97,6 +100,7 @@
 
         const source = new EventSource(`/sse/${encodeURIComponent(ticker)}`);
 
+        let markdownBuffer = "";
         source.onmessage = function(event) {
             loading.style.display = 'none';
             const data = event.data;
@@ -114,7 +118,8 @@
                 return;
             }
 
-            aiText.textContent += data;
+            markdownBuffer += data;
+            aiText.innerHTML = marked.parse(markdownBuffer);
         };
 
         source.onerror = function(err) {

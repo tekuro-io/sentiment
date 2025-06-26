@@ -16,10 +16,6 @@ var nullPage []byte
 //go:embed static/*
 var static embed.FS
 
-func handleNoTicker() string {
-    return "No ticker provided."
-}
-
 func main() {
     mux := http.NewServeMux()
 
@@ -27,6 +23,11 @@ func main() {
     if err != nil {
         log.Fatalf("Failed to start server, could not construct openai client: %v", err)
     }
+
+    mux.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("Content-Type", "text/html")
+        w.Write(nullPage)
+    })
 
     tmpl, err := template.ParseFiles("templates/sentiment.html")
     if err != nil {
