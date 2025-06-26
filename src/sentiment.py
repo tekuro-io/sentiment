@@ -97,7 +97,7 @@ def get_var(var):
         return render_template('null_page.html', data=data)
     else:
         ai_text = handle_ticker(var)
-        return render_template('sentiment.html', ai_text=ai_text)
+        return render_template('sentiment.html', ai_text=ai_text, ticker=var.upper())
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
