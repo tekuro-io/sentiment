@@ -12,7 +12,7 @@ import (
 
 type OpenAi struct {
 	client   openai.Client
-	web_tool *SerpApi
+    news_tool *Polygon
 }
 
 func NewOpenAi() (*OpenAi, error) {
@@ -26,39 +26,45 @@ func NewOpenAi() (*OpenAi, error) {
 		option.WithAPIKey(api_key),
 	)
 
-	web_tool, err := NewSerpApi()
-	if err != nil {
-		return nil, err
-	}
+    polygon, err := NewPolygon()
+    if err != nil {
+        return nil, err
+    }
+
 
 	return &OpenAi{
 		client:   client,
-		web_tool: web_tool,
+        news_tool: polygon,
 	}, nil
 }
 
 func (o *OpenAi) Sentiment(ctx context.Context, ticker string, sse *SSEWriter) {
 
-	webResults, err := o.web_tool.search(ticker)
+    sse.News()
+	newsResults, err := o.news_tool.News(ctx, ticker)
 	if err != nil {
 		sse.Error(err)
 		return
 	}
 
+    log.Printf("Got news with lenght %d\n", len(newsResults))
+
 	systemPrompt := `You are a professional stock market news analyst. 
-        Given web search results about a stock, summarize:
+        Given news results about a stock, summarize:
         - What the company does (1-2 lines)
         - Today's main catalyst or news moving the stock
         - Sentiment (Bullish, Bearish, Neutral) and why
-        - Possible intraday price action or volatility range estimate`
+        - Possible intraday price action or volatility range estimate
+    `
 
 	userPrompt := fmt.Sprintf(`Ticker: %s
         
-        Web Search Results:
+        News Results:
         %s
         
-        Give your analysis:`, ticker, webResults)
+        Give your analysis:`, ticker, newsResults)
 
+    sse.Model()
 	stream := o.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
 		Messages: []openai.ChatCompletionMessageParamUnion{
 			openai.SystemMessage(systemPrompt),

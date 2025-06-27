@@ -18,8 +18,7 @@
         }
         .ai-text {
             margin-top: 20px;
-            font-style: italic;
-            white-space: pre-wrap;
+            font-style: italic; white-space: pre-wrap;
             word-wrap: break-word;
             text-align: left;
             max-width: 800px;
@@ -82,7 +81,7 @@
     <!-- Loading Spinner -->
     <div id="loading">
         <div class="spinner"></div>
-        <p style="color: white; margin-top: 10px;">Generating AI Sentiment...</p>
+        <p style="color: white; margin-top: 10px;">Requesting Sentiment...</p>
     </div>
 
     <div class="round-logo">
@@ -96,14 +95,24 @@
 
         const aiText = document.querySelector('.ai-text');
         const loading = document.getElementById('loading');
-        const errorDiv = document.getElementById('error');
+        const errorDiv = document.getElementById('');
 
         const source = new EventSource(`/sse/${encodeURIComponent(ticker)}`);
 
         let markdownBuffer = "";
         source.onmessage = function(event) {
-            loading.style.display = 'none';
             const data = event.data;
+            if (data === '[NEWS]') {
+                loading.innerText = "Gathering latest news...";
+                return;
+            }
+
+            if (data === '[MODEL]') {
+                loading.innerText = "Determining sentiment...";
+                return;
+            }
+
+            loading.style.display = 'none';
 
             if (data === '[DONE]') {
                 source.close();
@@ -111,9 +120,7 @@
             }
 
             if (data.startsWith('[ERROR]')) {
-                loading.style.display = 'none';
-                errorDiv.style.display = 'block';
-                errorDiv.innerText = data.replace('[ERROR] ', '');
+                aiText.innerText = data;
                 source.close();
                 return;
             }
@@ -124,8 +131,7 @@
 
         source.onerror = function(err) {
             loading.style.display = 'none';
-            errorDiv.style.display = 'block';
-            errorDiv.innerText = 'Connection error. Please refresh and try again.';
+            aiText.innerText = 'Connection error. Please refresh and try again.';
             source.close();
         };
     </script>
