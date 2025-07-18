@@ -24,7 +24,12 @@ func main() {
 		log.Fatalf("Failed to start server, could not construct openai client: %v", err)
 	}
 
-	mux.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /get", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.Write(nullPage)
+	})
+
+	mux.HandleFunc("GET /get/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		w.Write(nullPage)
 	})

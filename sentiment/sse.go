@@ -27,8 +27,18 @@ func (s *SSEWriter) WriteEvent(data string) error {
 	return err
 }
 
-func (s *SSEWriter) News() {
-	fmt.Fprint(s.w, "data: [NEWS]\n\n")
+func (s *SSEWriter) Overview() {
+	fmt.Fprint(s.w, "data: [OVERVIEW]\n\n")
+	s.flusher.Flush()
+}
+
+func (s *SSEWriter) PNews() {
+	fmt.Fprint(s.w, "data: [PNEWS]\n\n")
+	s.flusher.Flush()
+}
+
+func (s *SSEWriter) GNews() {
+	fmt.Fprint(s.w, "data: [GNEWS]\n\n")
 	s.flusher.Flush()
 }
 

@@ -29,6 +29,24 @@ func NewPolygon() (*Polygon, error) {
 	}, nil
 }
 
+func (p *Polygon) Overview(ctx context.Context, ticker string) (string, error) {
+    params := models.GetTickerDetailsParams{
+        Ticker: ticker,
+    }
+
+    res, err := p.client.GetTickerDetails(ctx, &params)
+    if err != nil {
+        return "", fmt.Errorf("Failed to get ticker overview: %v", err)
+    }
+
+    jsonBytes, err := json.Marshal(res)
+    if err != nil {
+        return "", fmt.Errorf("Failed to deserialize ticker overview: %v", err)
+    }
+
+    return string(jsonBytes), nil
+}
+
 func (p *Polygon) News(ctx context.Context, ticker string) (string, error) {
 	sort := models.Sort("published_utc")
 	order := models.Order("asc")
@@ -44,7 +62,7 @@ func (p *Polygon) News(ctx context.Context, ticker string) (string, error) {
 
     var sb strings.Builder
     for iter.Next() {
-        jsonBytes, err := json.Marshal(iter.Item())
+        jsonBytes, err := json.Marshal(iter.Item().Description)
         if err != nil {
             return "", fmt.Errorf("Failed to deserialize ticker news: %v", err)
         }

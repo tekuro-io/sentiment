@@ -13,6 +13,7 @@ import (
 type OpenAi struct {
 	client   openai.Client
     news_tool *Polygon
+    google_news_tool *GoogleScraper
 }
 
 func NewOpenAi() (*OpenAi, error) {
@@ -35,34 +36,52 @@ func NewOpenAi() (*OpenAi, error) {
 	return &OpenAi{
 		client:   client,
         news_tool: polygon,
+        google_news_tool: NewGoogleScraper(),
 	}, nil
 }
 
 func (o *OpenAi) Sentiment(ctx context.Context, ticker string, sse *SSEWriter) {
 
-    sse.News()
+    sse.Overview()
+	overview, err := o.news_tool.Overview(ctx, ticker)
+	if err != nil {
+		sse.Error(err)
+		return
+	}
+
+    sse.PNews()
 	newsResults, err := o.news_tool.News(ctx, ticker)
 	if err != nil {
 		sse.Error(err)
 		return
 	}
 
-    log.Printf("Got news with lenght %d\n", len(newsResults))
+    sse.GNews()
+	gNewsResults, err := o.google_news_tool.getHeadlinesForTicker(ticker)
+	if err != nil {
+		sse.Error(err)
+		return
+	}
 
 	systemPrompt := `You are a professional stock market news analyst. 
         Given news results about a stock, summarize:
         - What the company does (1-2 lines)
         - Today's main catalyst or news moving the stock
+        - Could the stock experience a gamma squeeze or other technical price moves 
         - Sentiment (Bullish, Bearish, Neutral) and why
-        - Possible intraday price action or volatility range estimate
     `
 
 	userPrompt := fmt.Sprintf(`Ticker: %s
-        
-        News Results:
+        Polygon Company Overview:
         %s
         
-        Give your analysis:`, ticker, newsResults)
+        Polygon News Description:
+        %s
+
+        Google News scraped headlines:
+        %s
+        
+        Give your analysis:`, ticker, overview, newsResults, gNewsResults)
 
     sse.Model()
 	stream := o.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
