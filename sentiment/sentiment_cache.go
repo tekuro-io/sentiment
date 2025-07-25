@@ -32,6 +32,7 @@ func (c *SentimentCache) GetOrLoad(ticker string, fetch func() (*SentimentRespon
 			<-entry.wait
 			return entry.value, nil
 		}
+		c.cache.Delete(ticker)
 	}
 
 	entry := &sentimentCacheItem{
