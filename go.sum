@@ -22,6 +22,8 @@ github.com/openai/openai-go v1.7.0 h1:M1JfDjQgo3d3PsLyZgpGUG0wUAaUAitqJPM4Rl56dC
 github.com/openai/openai-go v1.7.0/go.mod h1:g461MYGXEXBVdV5SaR/5tNzNbSfwTBBefwc+LlDCK0Y=
 github.com/polygon-io/client-go v1.16.13 h1:OB2Iy37AKws3tL11lurgluKc/ItFr4eI6JRQ9EriAU4=
 github.com/polygon-io/client-go v1.16.13/go.mod h1:SZT6KN49CuFJnRTQgn1Dy6UwPFdi2kQs5U4b2B1Z1YA=
+github.com/polygon-io/client-go v1.16.16 h1:aJ2+9V9ilT+N6eCvxU7PY/N6ACQ7XDMOIpSFhQy/6kg=
+github.com/polygon-io/client-go v1.16.16/go.mod h1:SZT6KN49CuFJnRTQgn1Dy6UwPFdi2kQs5U4b2B1Z1YA=
 github.com/serpapi/google-search-results-golang v0.0.0-20240325113416-ec93f510648e h1:pBW1bjkGQGBdbT7a4IKq4W3H2apMQ7qvf+E/Ng5/0DY=
 github.com/serpapi/google-search-results-golang v0.0.0-20240325113416-ec93f510648e/go.mod h1:B4KcaaGbSpn3vq3FxSCsEJrBirStags89KTusB2of58=
 github.com/tidwall/gjson v1.14.2/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=

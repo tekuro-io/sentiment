@@ -13,7 +13,7 @@ require (
 	github.com/go-resty/resty/v2 v2.13.1 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/openai/openai-go v1.7.0 // indirect
-	github.com/polygon-io/client-go v1.16.13 // indirect
+	github.com/polygon-io/client-go v1.16.16 // indirect
 	github.com/serpapi/google-search-results-golang v0.0.0-20240325113416-ec93f510648e // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
