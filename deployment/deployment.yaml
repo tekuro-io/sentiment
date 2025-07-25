@@ -10,6 +10,8 @@ spec:
       app: sentiment-app
   template:
     metadata:
+      annotations:
+        git-tag: {TAG}
       labels:
         app: sentiment-app
     spec:
