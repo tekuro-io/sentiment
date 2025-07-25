@@ -46,7 +46,7 @@ func main() {
 		}
 	})
 
-	cacheTtl := time.Duration(5) * time.Minute
+	cacheTtl := time.Duration(2) * time.Minute
 	sentimentCache := sentiment.NewSentimentCache(cacheTtl)
 
 	mux.HandleFunc("GET /sse/{ticker}", func(w http.ResponseWriter, r *http.Request) {
