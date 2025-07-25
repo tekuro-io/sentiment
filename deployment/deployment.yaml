@@ -10,6 +10,8 @@ spec:
       app: sentiment-app
   template:
     metadata:
+      annotations:
+        git-tag: {TAG}
       labels:
         app: sentiment-app
     spec:
@@ -37,17 +39,3 @@ spec:
       restartPolicy: Always
       imagePullSecrets:
         - name: regcred
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: sentiment-service
-  namespace: stock
-spec:
-  selector:
-    app: sentiment-app
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 5000
-  type: ClusterIP
