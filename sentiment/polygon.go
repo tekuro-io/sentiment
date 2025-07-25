@@ -53,6 +53,7 @@ func (p *Polygon) News(ctx context.Context, ticker string) *iter.Iter[models.Tic
 	order := models.Order("asc")
 	limit := 1
 	twelveHoursAgo := models.Millis(time.Now().Add(-12 * time.Hour))
+
 	params := models.ListTickerNewsParams{
 		TickerEQ:        &ticker,
 		PublishedUtcGTE: &twelveHoursAgo,
