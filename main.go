@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"strings"
 	"tekuro/sentiment/sentiment"
 	"text/template"
 	"time"
@@ -16,6 +17,14 @@ var nullPage []byte
 
 //go:embed static/*
 var static embed.FS
+
+func chunkifyParagraphs(s string) []string {
+	paragraphs := strings.Split(s, "\n\n")
+	for i, p := range paragraphs {
+		paragraphs[i] = strings.TrimSpace(p)
+	}
+	return paragraphs
+}
 
 func main() {
 	mux := http.NewServeMux()
@@ -67,6 +76,11 @@ func main() {
 			sse.TickNews()
 			sse.WriteNews(cachedResponse.News)
 			sse.ModelBegin()
+
+			for _, para := range chunkifyParagraphs(cachedResponse.Chat) {
+				sse.WriteEvent(para)
+			}
+
 			sse.WriteEvent(cachedResponse.Chat)
 			sse.RanAt()
 			sse.WriteRanAt(cachedResponse.RanAt)
