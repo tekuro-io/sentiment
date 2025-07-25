@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"tekuro/sentiment/sentiment"
 	"text/template"
+	"time"
 )
 
 //go:embed templates/null_page.html
@@ -45,12 +46,29 @@ func main() {
 		}
 	})
 
+	cacheTtl := time.Duration(5) * time.Minute
+	sentimentCache := sentiment.NewSentimentCache(cacheTtl)
+
 	mux.HandleFunc("GET /sse/{ticker}", func(w http.ResponseWriter, r *http.Request) {
 		ticker := r.PathValue("ticker")
-		if sse, err := sentiment.NewSSEWriter(w); err != nil {
+		sse, err := sentiment.NewSSEWriter(w)
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-		} else {
-			openaiClient.Sentiment(r.Context(), ticker, sse)
+		}
+
+		wasLoaded := false
+		cachedResponse, err := sentimentCache.GetOrLoad(ticker, func() (*sentiment.SentimentResponse, error) {
+			wasLoaded = true
+			return openaiClient.Sentiment(r.Context(), ticker, sse)
+		})
+
+		if !wasLoaded {
+			sse.TickNews()
+			sse.WriteNews(cachedResponse.News)
+			sse.ModelBegin()
+			sse.WriteEvent(cachedResponse.Chat)
+			sse.RanAt()
+			sse.WriteRanAt(cachedResponse.RanAt)
 		}
 	})
 

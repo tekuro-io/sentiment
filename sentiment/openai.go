@@ -2,18 +2,22 @@ package sentiment
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
+	"github.com/polygon-io/client-go/rest/models"
 )
 
 type OpenAi struct {
-	client   openai.Client
-    news_tool *Polygon
-    google_news_tool *GoogleScraper
+	client           openai.Client
+	news_tool        *Polygon
+	google_news_tool *GoogleScraper
 }
 
 func NewOpenAi() (*OpenAi, error) {
@@ -27,40 +31,63 @@ func NewOpenAi() (*OpenAi, error) {
 		option.WithAPIKey(api_key),
 	)
 
-    polygon, err := NewPolygon()
-    if err != nil {
-        return nil, err
-    }
-
+	polygon, err := NewPolygon()
+	if err != nil {
+		return nil, err
+	}
 
 	return &OpenAi{
-		client:   client,
-        news_tool: polygon,
-        google_news_tool: NewGoogleScraper(),
+		client:           client,
+		news_tool:        polygon,
+		google_news_tool: NewGoogleScraper(),
 	}, nil
 }
 
-func (o *OpenAi) Sentiment(ctx context.Context, ticker string, sse *SSEWriter) {
+type SentimentResponse struct {
+	News  []models.TickerNews
+	Chat  string
+	RanAt time.Time
+}
 
-    sse.Overview()
+func (o *OpenAi) Sentiment(ctx context.Context, ticker string, sse *SSEWriter) (*SentimentResponse, error) {
+
+	sse.Overview()
 	overview, err := o.news_tool.Overview(ctx, ticker)
 	if err != nil {
 		sse.Error(err)
-		return
+		return nil, err
 	}
 
-    sse.PNews()
-	newsResults, err := o.news_tool.News(ctx, ticker)
-	if err != nil {
-		sse.Error(err)
-		return
+	sse.PNews()
+	newsResults := o.news_tool.News(ctx, ticker)
+
+	var newsList []models.TickerNews
+	var sb strings.Builder
+	for newsResults.Next() {
+		newsItem := newsResults.Item()
+		newsList = append(newsList, newsItem)
+		jsonBytes, err := json.Marshal(newsItem.Description)
+		if err != nil {
+			sse.Error(fmt.Errorf("failed to deserialize ticker news: %v", err))
+		}
+		sb.Write(jsonBytes)
+		sb.WriteByte('\n')
 	}
 
-    sse.GNews()
+	if err := newsResults.Err(); err != nil {
+		sse.Error(fmt.Errorf("failed to deserialize ticker news: %v", err))
+	}
+
+	newsString := sb.String()
+
+	sse.TickNews()
+	sse.WriteNews(newsList)
+
+	sse.GNews()
 	gNewsResults, err := o.google_news_tool.getHeadlinesForTicker(ticker)
 	if err != nil {
 		sse.Error(err)
-		return
+		return nil, err
 	}
 
 	systemPrompt := `You are a professional stock market news analyst. 
@@ -81,9 +108,9 @@ func (o *OpenAi) Sentiment(ctx context.Context, ticker string, sse *SSEWriter) {
         Google News scraped headlines:
         %s
         
-        Give your analysis:`, ticker, overview, newsResults, gNewsResults)
+        Give your analysis:`, ticker, overview, newsString, gNewsResults)
 
-    sse.Model()
+	sse.Model()
 	stream := o.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
 		Messages: []openai.ChatCompletionMessageParamUnion{
 			openai.SystemMessage(systemPrompt),
@@ -95,6 +122,8 @@ func (o *OpenAi) Sentiment(ctx context.Context, ticker string, sse *SSEWriter) {
 	defer stream.Close()
 
 	acc := openai.ChatCompletionAccumulator{}
+	var aisb strings.Builder
+	sse.ModelBegin()
 	for stream.Next() {
 		chunk := stream.Current()
 		acc.AddChunk(chunk)
@@ -113,13 +142,24 @@ func (o *OpenAi) Sentiment(ctx context.Context, ticker string, sse *SSEWriter) {
 		}
 
 		if len(chunk.Choices) > 0 {
-			sse.WriteEvent(chunk.Choices[0].Delta.Content)
+			content := chunk.Choices[0].Delta.Content
+			sse.WriteEvent(content)
+			aisb.WriteString(content)
 		}
 	}
 
 	if err := stream.Err(); err != nil {
 		sse.Error(err)
+		return nil, err
 	} else {
+		sse.RanAt()
+		ranAt := time.Now()
+		sse.WriteRanAt(ranAt)
 		sse.Done()
+		return &SentimentResponse{
+			News:  newsList,
+			Chat:  aisb.String(),
+			RanAt: ranAt,
+		}, nil
 	}
 }
