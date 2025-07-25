@@ -54,6 +54,7 @@ func main() {
 		sse, err := sentiment.NewSSEWriter(w)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		wasLoaded := false
@@ -69,6 +70,10 @@ func main() {
 			sse.WriteEvent(cachedResponse.Chat)
 			sse.RanAt()
 			sse.WriteRanAt(cachedResponse.RanAt)
+			sse.Done()
+		} else {
+			sse.Error(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
 

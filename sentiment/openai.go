@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -127,19 +126,6 @@ func (o *OpenAi) Sentiment(ctx context.Context, ticker string, sse *SSEWriter) (
 	for stream.Next() {
 		chunk := stream.Current()
 		acc.AddChunk(chunk)
-
-		if content, ok := acc.JustFinishedContent(); ok {
-			log.Println("Content stream finished:", content)
-		}
-
-		// if using tool calls
-		if tool, ok := acc.JustFinishedToolCall(); ok {
-			log.Println("Tool call stream finished:", tool.Index, tool.Name, tool.Arguments)
-		}
-
-		if refusal, ok := acc.JustFinishedRefusal(); ok {
-			log.Println("Refusal stream finished:", refusal)
-		}
 
 		if len(chunk.Choices) > 0 {
 			content := chunk.Choices[0].Delta.Content
