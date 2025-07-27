@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	_ "embed"
+	"encoding/json"
 	"io/fs"
 	"log"
 	"net/http"
@@ -77,11 +78,16 @@ func main() {
 			sse.WriteNews(cachedResponse.News)
 			sse.ModelBegin()
 
-			for _, para := range chunkifyParagraphs(cachedResponse.Chat) {
+			bytes, err := json.Marshal(cachedResponse.Chat)
+			if err != nil {
+				sse.Error(err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+
+			for _, para := range chunkifyParagraphs(string(bytes)) {
 				sse.WriteEvent(para)
 			}
 
-			sse.WriteEvent(cachedResponse.Chat)
 			sse.RanAt()
 			sse.WriteRanAt(cachedResponse.RanAt)
 			sse.Done()

@@ -45,7 +45,7 @@ func NewOpenAi() (*OpenAi, error) {
 
 type SentimentResponse struct {
 	News  []models.TickerNews
-	Chat  string
+	Chat  ChatSentimentResponse
 	RanAt time.Time
 }
 
@@ -173,6 +173,13 @@ func (o *OpenAi) Sentiment(ctx context.Context, ticker string, sse *SSEWriter) (
 		}
 	}
 
+	var chatSentimentResponse ChatSentimentResponse
+	err = json.Unmarshal([]byte(aisb.String()), &chatSentimentResponse)
+	if err != nil {
+		sse.Error(err)
+		return nil, err
+	}
+
 	if err := stream.Err(); err != nil {
 		sse.Error(err)
 		return nil, err
@@ -183,7 +190,7 @@ func (o *OpenAi) Sentiment(ctx context.Context, ticker string, sse *SSEWriter) (
 		sse.Done()
 		return &SentimentResponse{
 			News:  newsList,
-			Chat:  aisb.String(),
+			Chat:  chatSentimentResponse,
 			RanAt: ranAt,
 		}, nil
 	}
