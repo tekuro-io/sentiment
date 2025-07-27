@@ -20,6 +20,8 @@ type OpenAi struct {
 	google_news_tool *GoogleScraper
 }
 
+const dateLayout = "2006-01-02"
+
 func NewOpenAi() (*OpenAi, error) {
 	api_key, is_present := os.LookupEnv("OPENAI_KEY")
 
@@ -134,8 +136,11 @@ func (o *OpenAi) Sentiment(ctx context.Context, ticker string, sse *SSEWriter) (
 
         Google News scraped headlines:
         %s
+
+		Todays date (for news relevancy, don't depend on out-dated news!):
+		%s
         
-        Give your analysis:`, ticker, overview, newsString, gNewsResults)
+        Give your analysis:`, ticker, overview, newsString, gNewsResults, time.Now().Format(dateLayout))
 
 	sse.Model()
 	schemaParam := openai.ResponseFormatJSONSchemaJSONSchemaParam{
