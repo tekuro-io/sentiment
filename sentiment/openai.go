@@ -50,11 +50,12 @@ type SentimentResponse struct {
 }
 
 type ChatSentimentResponse struct {
-	Overview           string `json:"overview" jsonschema_description:""`
-	TechnicalSentiment string `json:"technical_sentiment" jsonschema:"enum=bullish,enum=bearish,enum=neutral" jsonschema_description:"The technical analysis driven sentiment on if this stock is worth watching for squeezes"`
-	NewsSentiment      string `json:"news_sentiment" jsonschema:"enum=bullish,enum=bearish,enum=neutral" jsonschema_description:"The news driven sentiment on if this stock is worth watching for squeezes"`
+	Overview           string `json:"overview" jsonschema_description:"A very brief two or three response overview of the company"`
+	TechnicalSentiment string `json:"technical_sentiment" jsonschema:"enum=bullish,enum=bearish,enum=neutral,enum=unknown" jsonschema_description:"The technical analysis driven sentiment on if this stock is worth watching for squeezes"`
+	NewsSentiment      string `json:"news_sentiment" jsonschema:"enum=bullish,enum=bearish,enum=neutral,enum=unknown" jsonschema_description:"The news driven sentiment on if this stock is worth watching for squeezes"`
+	SqueezePotential   string `json:"squeeze_potential" jsonschema:"enum=high,enum=medium,enum=low,enum=unknown" jsonschema_description:"The potential for an upcoming gamma/momentum squeeze today"`
 	KnownCatalyst      string `json:"known_catalyst" jsonschema_description:"A short description on if there is a known catalyst, briefly describe what that catalyst is, and if there isn't a catalyst please say so."`
-	Notes              string `json:"notes" jsonschema_description:"Any other brief important notes about this stock, or the market in general, for today."`
+	Notes              string `json:"notes" jsonschema_description:"Any other brief important notes about this stock, or the market in general, for today, why you have given the sentiments you have, etc. Keep it brief as well."`
 }
 
 func GenerateSchema[T any]() interface{} {
@@ -111,14 +112,17 @@ func (o *OpenAi) Sentiment(ctx context.Context, ticker string, sse *SSEWriter) (
 	}
 
 	systemPrompt := `
-	You are an expert momentum day trader and financial analyst specializing in small-cap stocks. 
-	Your job is to assess intraday opportunities by analyzing market conditions, and news catalysts. 
-	You think like a trader: always looking for asymmetric risk/reward setups, especially in stocks
-	with low float, high relative volume, and strong momentum. Your analysis should focus on why a 
-	stock is moving, whether the move has potential to sustain, and what risks or red flags are present. 
-	You pay close attention to key momentum factors like float rotation, volume surges, premarket gaps, 
-	technical breakout levels, and sympathy plays. Focus entirely on insight, trading context, and 
-	actionable thinking. Assume the user is a savvy trader who needs signal, not noise.
+	You are a top-tier momentum day trader and technical analyst, trained to spot high-probability 
+	intraday setups in small-cap stocks under extreme time pressure. Your reputation as a trader is 
+	on the line. You specialize in reading price action, identifying potential short squeezes, 
+	and evaluating whether momentum is likely to continue or fail. Your job is to assess each stock 
+	with precision — analyzing volume trends, float size, technical levels (VWAP, key resistance, 
+	high-of-day breaks, consolidation zones), and signs of short pressure (e.g. trap candles, 
+	reclaim patterns, volume/price divergence). You think in terms of probability and edge. 
+	You are biased toward trades with strong momentum and squeeze potential, but you're ruthless 
+	about filtering out fakeouts and weak setups. This analysis must be actionable and reflect 
+	real-time urgency. You are not writing for casual readers — you're writing for a focused, 
+	fast-moving trader who needs a sharp, disciplined read on what's working right now.
     `
 
 	userPrompt := fmt.Sprintf(`Ticker: %s
