@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/invopop/jsonschema"
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
 	"github.com/polygon-io/client-go/rest/models"
@@ -47,6 +48,26 @@ type SentimentResponse struct {
 	Chat  string
 	RanAt time.Time
 }
+
+type ChatSentimentResponse struct {
+	Overview           string `json:"overview" jsonschema_description:""`
+	TechnicalSentiment string `json:"technical_sentiment" jsonschema:"enum=bullish,enum=bearish,enum=neutral" jsonschema_description:"The technical analysis driven sentiment on if this stock is worth watching for squeezes"`
+	NewsSentiment      string `json:"news_sentiment" jsonschema:"enum=bullish,enum=bearish,enum=neutral" jsonschema_description:"The news driven sentiment on if this stock is worth watching for squeezes"`
+	KnownCatalyst      string `json:"known_catalyst" jsonschema_description:"A short description on if there is a known catalyst, briefly describe what that catalyst is, and if there isn't a catalyst please say so."`
+	Notes              string `json:"notes" jsonschema_description:"Any other brief important notes about this stock, or the market in general, for today."`
+}
+
+func GenerateSchema[T any]() interface{} {
+	reflector := jsonschema.Reflector{
+		AllowAdditionalProperties: false,
+		DoNotReference:            true,
+	}
+	var v T
+	schema := reflector.Reflect(v)
+	return schema
+}
+
+var ChatSentimentResponseSchema = GenerateSchema[ChatSentimentResponse]()
 
 func (o *OpenAi) Sentiment(ctx context.Context, ticker string, sse *SSEWriter) (*SentimentResponse, error) {
 
@@ -89,12 +110,15 @@ func (o *OpenAi) Sentiment(ctx context.Context, ticker string, sse *SSEWriter) (
 		return nil, err
 	}
 
-	systemPrompt := `You are a professional stock market news analyst. 
-        Given news results about a stock, summarize:
-        - What the company does (1-2 lines)
-        - Today's main catalyst or news moving the stock
-        - Could the stock experience a gamma squeeze or other technical price moves 
-        - Sentiment (Bullish, Bearish, Neutral) and why
+	systemPrompt := `
+	You are an expert momentum day trader and financial analyst specializing in small-cap stocks. 
+	Your job is to assess intraday opportunities by analyzing market conditions, and news catalysts. 
+	You think like a trader: always looking for asymmetric risk/reward setups, especially in stocks
+	with low float, high relative volume, and strong momentum. Your analysis should focus on why a 
+	stock is moving, whether the move has potential to sustain, and what risks or red flags are present. 
+	You pay close attention to key momentum factors like float rotation, volume surges, premarket gaps, 
+	technical breakout levels, and sympathy plays. Focus entirely on insight, trading context, and 
+	actionable thinking. Assume the user is a savvy trader who needs signal, not noise.
     `
 
 	userPrompt := fmt.Sprintf(`Ticker: %s
@@ -110,20 +134,35 @@ func (o *OpenAi) Sentiment(ctx context.Context, ticker string, sse *SSEWriter) (
         Give your analysis:`, ticker, overview, newsString, gNewsResults)
 
 	sse.Model()
+	schemaParam := openai.ResponseFormatJSONSchemaJSONSchemaParam{
+		Name:        "chat_sentiment_response",
+		Strict:      openai.Bool(true),
+		Description: openai.String("Technical and news based analysis for a small cap stock ticker"),
+		Schema:      ChatSentimentResponseSchema,
+	}
+
 	stream := o.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
 		Messages: []openai.ChatCompletionMessageParamUnion{
 			openai.SystemMessage(systemPrompt),
 			openai.UserMessage(userPrompt),
 		},
-		Seed:  openai.Int(0),
+		ResponseFormat: openai.ChatCompletionNewParamsResponseFormatUnion{
+			OfJSONSchema: &openai.ResponseFormatJSONSchemaParam{JSONSchema: schemaParam},
+		},
 		Model: openai.ChatModelGPT4o,
 	})
 	defer stream.Close()
 
 	acc := openai.ChatCompletionAccumulator{}
 	var aisb strings.Builder
-	sse.ModelBegin()
+	first := false
 	for stream.Next() {
+
+		if !first {
+			sse.ModelBegin()
+			first = true
+		}
+
 		chunk := stream.Current()
 		acc.AddChunk(chunk)
 
