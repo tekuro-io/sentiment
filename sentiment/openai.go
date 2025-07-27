@@ -20,7 +20,7 @@ type OpenAi struct {
 	google_news_tool *GoogleScraper
 }
 
-const dateLayout = "2006-01-02"
+const dateLayout = "2006-01-02T15:04:05Z"
 
 func NewOpenAi() (*OpenAi, error) {
 	api_key, is_present := os.LookupEnv("OPENAI_KEY")
